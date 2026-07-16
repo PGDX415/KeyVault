@@ -1,61 +1,42 @@
 //
-//  ContentView.swift
+//  AppRootView.swift
 //  KeyVault
 //
-//  Created by Paul Dexin Gong on 2026/7/16.
+//  应用根视图：根据安全状态切换不同页面
+//  - 未设置主密码 → 设置密码页
+//  - 已设置但未解锁 → 解锁页
+//  - 已解锁 → 账户列表主页面
 //
 
 import SwiftUI
-import SwiftData
 
-struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+struct AppRootView: View {
+
+    @State private var securityService = SecurityService.shared
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
-        }
-    }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
-    }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+        Group {
+            if securityService.isUnlocked {
+                AccountListView()
+                    .transition(.opacity)
+            } else if securityService.isSetupComplete {
+                LockView()
+                    .transition(.opacity)
+            } else {
+                SetupPasswordView()
+                    .transition(.opacity)
             }
         }
+        .animation(.easeInOut(duration: 0.3), value: securityService.isUnlocked)
+        .animation(.easeInOut(duration: 0.3), value: securityService.isSetupComplete)
+        .preferredColorScheme(.none) // 跟随系统深色/浅色模式
     }
 }
 
-#Preview {
-    ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
+#Preview("未设置") {
+    AppRootView()
+}
+
+#Preview("已锁定") {
+    AppRootView()
 }

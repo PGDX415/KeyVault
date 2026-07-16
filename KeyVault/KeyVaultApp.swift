@@ -2,7 +2,7 @@
 //  KeyVaultApp.swift
 //  KeyVault
 //
-//  Created by Paul Dexin Gong on 2026/7/16.
+//  密钥阁 App 入口：管理安全状态、自动锁定、数据持久化
 //
 
 import SwiftUI
@@ -10,23 +10,41 @@ import SwiftData
 
 @main
 struct KeyVaultApp: App {
+
+    @State private var securityService = SecurityService.shared
+
+    /// SwiftData 持久化容器：存储加密后的 Account 模型
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Account.self,
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false
+        )
 
         do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            return try ModelContainer(
+                for: schema,
+                configurations: [modelConfiguration]
+            )
         } catch {
-            fatalError("Could not create ModelContainer: \(error)")
+            fatalError("无法创建数据库容器: \(error)")
         }
     }()
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            AppRootView()
         }
         .modelContainer(sharedModelContainer)
+        // 监听应用生命周期，切后台时自动锁定
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background || newPhase == .inactive {
+                securityService.lock()
+            }
+        }
     }
+
+    @Environment(\.scenePhase) private var scenePhase
 }
