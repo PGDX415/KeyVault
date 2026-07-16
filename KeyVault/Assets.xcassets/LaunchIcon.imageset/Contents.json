@@ -1,15 +1,17 @@
 {
   "images" : [
     {
+      "idiom" : "universal",
+      "scale" : "1x"
+    },
+    {
       "filename" : "launch_shield.png",
       "idiom" : "universal",
-      "platform" : "ios",
       "scale" : "2x"
     },
     {
       "filename" : "launch_shield.png",
       "idiom" : "universal",
-      "platform" : "ios",
       "scale" : "3x"
     }
   ],

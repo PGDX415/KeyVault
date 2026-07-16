@@ -21,13 +21,11 @@ struct AccountDetailView: View {
     @State private var showEditSheet = false
 
     private var accentColor: Color {
-        account.category == .bankAccount ? .blue : .purple
+        account.category.color
     }
 
     private var gradientColors: [Color] {
-        account.category == .bankAccount
-            ? [.blue, .cyan]
-            : [.purple, .indigo]
+        [account.category.color, account.category.color.opacity(0.7)]
     }
 
     var body: some View {
@@ -41,12 +39,7 @@ struct AccountDetailView: View {
                 categoryBadge
 
                 // 根据分类显示不同字段
-                switch account.category {
-                case .general:
-                    generalDetailSection
-                case .bankAccount:
-                    bankDetailSection
-                }
+                categoryDetailSection
 
                 Divider()
 
@@ -109,7 +102,7 @@ struct AccountDetailView: View {
                     .font(.title2)
                     .fontWeight(.bold)
 
-                if account.category == .general && !account.url.isEmpty {
+                if !account.url.isEmpty {
                     Text(account.url)
                         .font(.subheadline)
                         .foregroundColor(accentColor)
@@ -138,155 +131,148 @@ struct AccountDetailView: View {
         .cornerRadius(6)
     }
 
-    // MARK: - 通用凭证详情
+    // MARK: - 分类详情
 
-    private var generalDetailSection: some View {
+    @ViewBuilder
+    private var categoryDetailSection: some View {
         VStack(alignment: .leading, spacing: 20) {
-            // 用户名
-            maskableInfoRow(
-                icon: "person.fill",
-                label: "账号",
-                value: account.username,
-                isVisible: true,
-                iconColor: accentColor,
-                onCopy: {
-                    copyToClipboard(account.username, label: "账号已复制")
+            switch account.category {
+            // ── 通用 / 登陆密码 / 互联网账户 ──
+            case .general, .loginPassword, .internetAccount:
+                if !account.username.isEmpty {
+                    maskableInfoRow(icon: "person.fill", label: "账号", value: account.username, isVisible: true, iconColor: accentColor, onCopy: { copyToClipboard(account.username, label: "账号已复制") })
                 }
-            )
-
-            // 密码
-            maskableInfoRow(
-                icon: "key.fill",
-                label: "密码",
-                value: account.password,
-                isVisible: isPasswordVisible,
-                iconColor: .orange,
-                onToggle: { isPasswordVisible.toggle() }
-            ) {
-                copyToClipboard(account.password, label: "密码已复制")
-            }
-
-            // 网址
-            if !account.url.isEmpty {
-                infoRow(
-                    icon: "link",
-                    label: "网址",
-                    value: account.url,
-                    iconColor: accentColor
-                ) {
-                    copyToClipboard(account.url, label: "网址已复制")
+                if !account.password.isEmpty {
+                    maskableInfoRow(icon: "key.fill", label: "密码", value: account.password, isVisible: isPasswordVisible, iconColor: .orange, onToggle: { isPasswordVisible.toggle() }) { copyToClipboard(account.password, label: "密码已复制") }
                 }
-            }
-        }
-    }
-
-    // MARK: - 银行账户详情
-
-    private var bankDetailSection: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // 银行名称
-            if !account.bankName.isEmpty {
-                labelValueRow(
-                    icon: "building.columns.fill",
-                    label: "发卡银行",
-                    value: account.bankName,
-                    iconColor: .blue
-                )
-            }
-
-            // 卡类型
-            labelValueRow(
-                icon: "wallet.pass",
-                label: "卡类型",
-                value: account.cardType.rawValue,
-                iconColor: .blue
-            )
-
-            // 银行卡号（可显示/隐藏）
-            maskableInfoRow(
-                icon: "creditcard.fill",
-                label: "银行卡号",
-                value: account.cardNumber,
-                isVisible: isCardNumberVisible,
-                iconColor: .blue,
-                onToggle: { isCardNumberVisible.toggle() }
-            ) {
-                copyToClipboard(account.cardNumber, label: "卡号已复制")
-            }
-
-            // 户名
-            if !account.cardholderName.isEmpty {
-                maskableInfoRow(
-                    icon: "person.text.rectangle.fill",
-                    label: "户名",
-                    value: account.cardholderName,
-                    isVisible: true,
-                    iconColor: .blue,
-                    onCopy: {
-                        copyToClipboard(account.cardholderName, label: "户名已复制")
-                    }
-                )
-            }
-
-            // CVV 安全码
-            if !account.cvv.isEmpty {
-                maskableInfoRow(
-                    icon: "number.square.fill",
-                    label: "CVV 安全码",
-                    value: account.cvv,
-                    isVisible: isCVVVisible,
-                    iconColor: .orange,
-                    onToggle: { isCVVVisible.toggle() }
-                ) {
-                    copyToClipboard(account.cvv, label: "CVV 已复制")
+                if !account.url.isEmpty {
+                    infoRow(icon: "link", label: "网址", value: account.url, iconColor: accentColor) { copyToClipboard(account.url, label: "网址已复制") }
                 }
-            }
 
-            // 有效期
-            if !account.expiryDate.isEmpty {
-                infoRow(
-                    icon: "calendar",
-                    label: "有效期",
-                    value: account.expiryDate,
-                    iconColor: .orange
-                ) {
-                    copyToClipboard(account.expiryDate, label: "有效期已复制")
+            // ── 电子邮件账户 ──
+            case .emailAccount:
+                if !account.username.isEmpty {
+                    maskableInfoRow(icon: "envelope.fill", label: "邮箱地址", value: account.username, isVisible: true, iconColor: .blue, onCopy: { copyToClipboard(account.username, label: "邮箱已复制") })
                 }
-            }
-
-            // 密码（ATM PIN）
-            if !account.password.isEmpty {
-                maskableInfoRow(
-                    icon: "key.fill",
-                    label: "ATM/查询密码",
-                    value: account.password,
-                    isVisible: isPasswordVisible,
-                    iconColor: .orange,
-                    onToggle: { isPasswordVisible.toggle() }
-                ) {
-                    copyToClipboard(account.password, label: "密码已复制")
+                if !account.password.isEmpty {
+                    maskableInfoRow(icon: "key.fill", label: "密码", value: account.password, isVisible: isPasswordVisible, iconColor: .orange, onToggle: { isPasswordVisible.toggle() }) { copyToClipboard(account.password, label: "密码已复制") }
                 }
-            }
+                if !account.server.isEmpty { labelValueRow(icon: "server.rack", label: "服务器", value: account.server, iconColor: .gray) }
+                if !account.port.isEmpty { labelValueRow(icon: "number", label: "端口", value: account.port, iconColor: .gray) }
 
-            // 开户行
-            if !account.branch.isEmpty {
-                labelValueRow(
-                    icon: "mappin.and.ellipse",
-                    label: "开户行",
-                    value: account.branch,
-                    iconColor: .gray
-                )
-            }
+            // ── 银行账户 ──
+            case .bankAccount:
+                if !account.bankName.isEmpty { labelValueRow(icon: "building.columns.fill", label: "发卡银行", value: account.bankName, iconColor: .blue) }
+                labelValueRow(icon: "wallet.pass", label: "卡类型", value: account.cardType.rawValue, iconColor: .blue)
+                if !account.cardNumber.isEmpty {
+                    maskableInfoRow(icon: "creditcard.fill", label: "银行卡号", value: account.cardNumber, isVisible: isCardNumberVisible, iconColor: .blue, onToggle: { isCardNumberVisible.toggle() }) { copyToClipboard(account.cardNumber, label: "卡号已复制") }
+                }
+                if !account.cardholderName.isEmpty {
+                    maskableInfoRow(icon: "person.text.rectangle.fill", label: "户名", value: account.cardholderName, isVisible: true, iconColor: .blue, onCopy: { copyToClipboard(account.cardholderName, label: "户名已复制") })
+                }
+                if !account.cvv.isEmpty {
+                    maskableInfoRow(icon: "number.square.fill", label: "CVV 安全码", value: account.cvv, isVisible: isCVVVisible, iconColor: .orange, onToggle: { isCVVVisible.toggle() }) { copyToClipboard(account.cvv, label: "CVV 已复制") }
+                }
+                if !account.expiryDate.isEmpty {
+                    infoRow(icon: "calendar", label: "有效期", value: account.expiryDate, iconColor: .orange) { copyToClipboard(account.expiryDate, label: "有效期已复制") }
+                }
+                if !account.password.isEmpty {
+                    maskableInfoRow(icon: "key.fill", label: "ATM/查询密码", value: account.password, isVisible: isPasswordVisible, iconColor: .orange, onToggle: { isPasswordVisible.toggle() }) { copyToClipboard(account.password, label: "密码已复制") }
+                }
+                if !account.branch.isEmpty { labelValueRow(icon: "mappin.and.ellipse", label: "开户行", value: account.branch, iconColor: .gray) }
+                if !account.phone.isEmpty {
+                    infoRow(icon: "phone.fill", label: "预留手机号", value: account.phone, iconColor: .gray) { copyToClipboard(account.phone, label: "手机号已复制") }
+                }
 
-            // 预留手机号
-            if !account.phone.isEmpty {
-                infoRow(
-                    icon: "phone.fill",
-                    label: "预留手机号",
-                    value: account.phone,
-                    iconColor: .gray
-                ) {
-                    copyToClipboard(account.phone, label: "手机号已复制")
+            // ── 信用卡 ──
+            case .creditCard:
+                if !account.bankName.isEmpty { labelValueRow(icon: "building.columns.fill", label: "发卡银行", value: account.bankName, iconColor: .red) }
+                if !account.cardNumber.isEmpty {
+                    maskableInfoRow(icon: "creditcard.fill", label: "卡号", value: account.cardNumber, isVisible: isCardNumberVisible, iconColor: .red, onToggle: { isCardNumberVisible.toggle() }) { copyToClipboard(account.cardNumber, label: "卡号已复制") }
+                }
+                if !account.cardholderName.isEmpty { labelValueRow(icon: "person.fill", label: "持卡人", value: account.cardholderName, iconColor: .red) }
+                if !account.expiryDate.isEmpty { infoRow(icon: "calendar", label: "有效期", value: account.expiryDate, iconColor: .orange) { copyToClipboard(account.expiryDate, label: "有效期已复制") } }
+                if !account.cvv.isEmpty {
+                    maskableInfoRow(icon: "number.square.fill", label: "CVV", value: account.cvv, isVisible: isCVVVisible, iconColor: .orange, onToggle: { isCVVVisible.toggle() }) { copyToClipboard(account.cvv, label: "CVV 已复制") }
+                }
+                if !account.password.isEmpty {
+                    maskableInfoRow(icon: "key.fill", label: "查询密码", value: account.password, isVisible: isPasswordVisible, iconColor: .orange, onToggle: { isPasswordVisible.toggle() }) { copyToClipboard(account.password, label: "密码已复制") }
+                }
+                if !account.billingDay.isEmpty { labelValueRow(icon: "calendar.badge.clock", label: "账单日", value: account.billingDay, iconColor: .gray) }
+                if !account.repaymentDay.isEmpty { labelValueRow(icon: "calendar.badge.checkmark", label: "还款日", value: account.repaymentDay, iconColor: .gray) }
+                if !account.creditLimit.isEmpty { labelValueRow(icon: "banknote", label: "额度", value: account.creditLimit, iconColor: .gray) }
+                if !account.phone.isEmpty { infoRow(icon: "phone.fill", label: "客服电话", value: account.phone, iconColor: .gray) { copyToClipboard(account.phone, label: "电话已复制") } }
+
+            // ── 会员 ──
+            case .membership:
+                if !account.documentNumber.isEmpty {
+                    maskableInfoRow(icon: "person.fill", label: "会员号", value: account.documentNumber, isVisible: true, iconColor: .orange, onCopy: { copyToClipboard(account.documentNumber, label: "会员号已复制") })
+                }
+                if !account.membershipLevel.isEmpty { labelValueRow(icon: "star.fill", label: "等级", value: account.membershipLevel, iconColor: .orange) }
+                if !account.password.isEmpty {
+                    maskableInfoRow(icon: "key.fill", label: "密码", value: account.password, isVisible: isPasswordVisible, iconColor: .orange, onToggle: { isPasswordVisible.toggle() }) { copyToClipboard(account.password, label: "密码已复制") }
+                }
+                if !account.expiryDate.isEmpty { infoRow(icon: "calendar", label: "有效期", value: account.expiryDate, iconColor: .gray) { copyToClipboard(account.expiryDate, label: "有效期已复制") } }
+                if !account.url.isEmpty { infoRow(icon: "link", label: "官网", value: account.url, iconColor: accentColor) { copyToClipboard(account.url, label: "网址已复制") } }
+
+            // ── 社保 ──
+            case .socialSecurity:
+                if !account.fullName.isEmpty { labelValueRow(icon: "person.fill", label: "姓名", value: account.fullName, iconColor: .teal) }
+                if !account.documentNumber.isEmpty {
+                    maskableInfoRow(icon: "number.square.fill", label: "社保号码", value: account.documentNumber, isVisible: true, iconColor: .teal, onCopy: { copyToClipboard(account.documentNumber, label: "社保号已复制") })
+                }
+                if !account.issuingAuthority.isEmpty { labelValueRow(icon: "building.2.fill", label: "发卡机构", value: account.issuingAuthority, iconColor: .gray) }
+                if !account.expiryDate.isEmpty { infoRow(icon: "calendar", label: "有效期", value: account.expiryDate, iconColor: .gray) { copyToClipboard(account.expiryDate, label: "有效期已复制") } }
+
+            // ── 驾照 / 身份证 / 护照 ──
+            case .driversLicense, .idCard, .passport:
+                let c = account.category.color
+                if !account.fullName.isEmpty { labelValueRow(icon: "person.fill", label: "姓名", value: account.fullName, iconColor: c) }
+                if !account.documentNumber.isEmpty {
+                    let docLabel = account.category == .idCard ? "身份证号" : account.category == .passport ? "护照号" : "驾照号"
+                    maskableInfoRow(icon: "number.square.fill", label: docLabel, value: account.documentNumber, isVisible: true, iconColor: c, onCopy: { copyToClipboard(account.documentNumber, label: "\(docLabel)已复制") })
+                }
+                if !account.issuingAuthority.isEmpty { labelValueRow(icon: "building.2.fill", label: "签发机关", value: account.issuingAuthority, iconColor: .gray) }
+                if !account.expiryDate.isEmpty { infoRow(icon: "calendar", label: "有效期", value: account.expiryDate, iconColor: .gray) { copyToClipboard(account.expiryDate, label: "有效期已复制") } }
+
+            // ── Wi-Fi 路由器 ──
+            case .wifiRouter:
+                if !account.ssid.isEmpty { labelValueRow(icon: "wifi", label: "SSID", value: account.ssid, iconColor: .blue) }
+                if !account.securityType.isEmpty { labelValueRow(icon: "lock.shield.fill", label: "安全类型", value: account.securityType, iconColor: .gray) }
+                if !account.password.isEmpty {
+                    maskableInfoRow(icon: "key.fill", label: "密码", value: account.password, isVisible: isPasswordVisible, iconColor: .orange, onToggle: { isPasswordVisible.toggle() }) { copyToClipboard(account.password, label: "密码已复制") }
+                }
+
+            // ── 保险 ──
+            case .insurance:
+                if !account.bankName.isEmpty { labelValueRow(icon: "building.columns.fill", label: "保险公司", value: account.bankName, iconColor: .mint) }
+                if !account.insuranceType.isEmpty { labelValueRow(icon: "umbrella.fill", label: "险种", value: account.insuranceType, iconColor: .mint) }
+                if !account.insuredPerson.isEmpty { labelValueRow(icon: "person.fill", label: "被保人", value: account.insuredPerson, iconColor: .mint) }
+                if !account.documentNumber.isEmpty {
+                    maskableInfoRow(icon: "doc.text.fill", label: "保单号", value: account.documentNumber, isVisible: true, iconColor: .gray, onCopy: { copyToClipboard(account.documentNumber, label: "保单号已复制") })
+                }
+                if !account.expiryDate.isEmpty { infoRow(icon: "calendar", label: "有效期", value: account.expiryDate, iconColor: .gray) { copyToClipboard(account.expiryDate, label: "有效期已复制") } }
+                if !account.phone.isEmpty { infoRow(icon: "phone.fill", label: "客服电话", value: account.phone, iconColor: .gray) { copyToClipboard(account.phone, label: "电话已复制") } }
+
+            // ── 网路服务提供商 ──
+            case .isp:
+                if !account.username.isEmpty {
+                    maskableInfoRow(icon: "person.fill", label: "账号", value: account.username, isVisible: true, iconColor: .gray, onCopy: { copyToClipboard(account.username, label: "账号已复制") })
+                }
+                if !account.password.isEmpty {
+                    maskableInfoRow(icon: "key.fill", label: "密码", value: account.password, isVisible: isPasswordVisible, iconColor: .orange, onToggle: { isPasswordVisible.toggle() }) { copyToClipboard(account.password, label: "密码已复制") }
+                }
+                if !account.networkType.isEmpty { labelValueRow(icon: "doc.text.fill", label: "套餐", value: account.networkType, iconColor: .gray) }
+                if !account.phone.isEmpty { infoRow(icon: "phone.fill", label: "客服电话", value: account.phone, iconColor: .gray) { copyToClipboard(account.phone, label: "电话已复制") } }
+
+            // ── 加密币钱包 ──
+            case .cryptoWallet:
+                if !account.walletAddress.isEmpty {
+                    maskableInfoRow(icon: "bitcoinsign.circle", label: "钱包地址", value: account.walletAddress, isVisible: true, iconColor: .orange, onCopy: { copyToClipboard(account.walletAddress, label: "地址已复制") })
+                }
+                if !account.networkType.isEmpty { labelValueRow(icon: "circle.hexagongrid", label: "网络类型", value: account.networkType, iconColor: .gray) }
+                if !account.password.isEmpty {
+                    maskableInfoRow(icon: "key.fill", label: "私钥/助记词", value: account.password, isVisible: isPasswordVisible, iconColor: .orange, onToggle: { isPasswordVisible.toggle() }) { copyToClipboard(account.password, label: "私钥已复制") }
                 }
             }
         }
@@ -487,6 +473,21 @@ struct AccountDetailView: View {
                 phone: "",
                 cvv: "",
                 expiryDate: "",
+                billingDay: "",
+                repaymentDay: "",
+                creditLimit: "",
+                fullName: "",
+                documentNumber: "",
+                issuingAuthority: "",
+                ssid: "",
+                securityType: "",
+                membershipLevel: "",
+                insuranceType: "",
+                insuredPerson: "",
+                walletAddress: "",
+                networkType: "",
+                server: "",
+                port: "",
                 createdAt: Date(),
                 modifiedAt: Date()
             ),
@@ -514,6 +515,21 @@ struct AccountDetailView: View {
                 phone: "13800138000",
                 cvv: "",
                 expiryDate: "",
+                billingDay: "",
+                repaymentDay: "",
+                creditLimit: "",
+                fullName: "",
+                documentNumber: "",
+                issuingAuthority: "",
+                ssid: "",
+                securityType: "",
+                membershipLevel: "",
+                insuranceType: "",
+                insuredPerson: "",
+                walletAddress: "",
+                networkType: "",
+                server: "",
+                port: "",
                 createdAt: Date(),
                 modifiedAt: Date()
             ),

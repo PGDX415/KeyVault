@@ -177,22 +177,20 @@ struct AccountRowView: View {
     let account: AccountDisplay
 
     private var accentColor: Color {
-        account.category == .bankAccount ? .blue : .purple
+        account.category.color
     }
 
     private var gradientColors: [Color] {
-        account.category == .bankAccount
-            ? [.blue, .cyan]
-            : [.purple, .indigo]
+        [account.category.color, account.category.color.opacity(0.7)]
     }
 
     private var subtitle: String {
         switch account.category {
-        case .general:
-            return account.username
-        case .bankAccount:
+        case .bankAccount, .creditCard:
             let parts = [account.cardNumber]
             return parts.filter { !$0.isEmpty }.joined(separator: " · ")
+        default:
+            return account.username
         }
     }
 

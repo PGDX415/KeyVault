@@ -74,74 +74,21 @@ struct AccountEditView: View {
                 }
 
                 // MARK: 分类专属字段
-                switch formData.category {
-                case .general:
-                    generalCredentialFields
-                case .bankAccount:
-                    bankAccountFields
-                }
+                categoryFields
 
-                // MARK: 通用密码字段
-                Section {
-                    HStack {
-                        Image(systemName: "key.fill")
-                            .foregroundColor(.orange)
-
-                        if showPassword {
-                            TextField(
-                                formData.category == .bankAccount ? "ATM/查询密码" : "密码 *",
-                                text: $formData.password
-                            )
-                            .textContentType(.password)
-                        } else {
-                            SecureField(
-                                formData.category == .bankAccount ? "ATM/查询密码" : "密码 *",
-                                text: $formData.password
-                            )
-                            .textContentType(.password)
+                // MARK: 密码字段（除证件类和钱包外都显示）
+                if formData.category != .idCard && formData.category != .driversLicense &&
+                   formData.category != .passport && formData.category != .socialSecurity &&
+                   formData.category != .cryptoWallet {
+                    let isBank = formData.category == .bankAccount || formData.category == .creditCard
+                    Section {
+                        passwordField(isOptional: isBank, placeholder: isBank ? "ATM/查询密码" : "密码 *")
+                    } header: {
+                        Text(isBank ? "密码（可选）" : "密码")
+                    } footer: {
+                        if !isBank {
+                            Text("点击 ✨ 按钮可生成高强度随机密码")
                         }
-
-                        Button {
-                            showPassword.toggle()
-                        } label: {
-                            Image(systemName: showPassword ? "eye.slash" : "eye")
-                                .foregroundColor(.secondary)
-                        }
-
-                        // 密码生成器（仅通用凭证显示）
-                        if formData.category == .general {
-                            Button {
-                                generatePassword()
-                                showPassword = true
-                            } label: {
-                                Image(systemName: "wand.and.stars")
-                                    .foregroundColor(.purple)
-                            }
-                        }
-                    }
-
-                    if showGeneratedPassword && !formData.password.isEmpty {
-                        HStack {
-                            Image(systemName: "sparkles")
-                                .foregroundColor(.purple)
-                            Text("已生成随机密码")
-                                .font(.caption)
-                                .foregroundColor(.purple)
-                            Spacer()
-                            Button {
-                                viewModel.copyToClipboard(formData.password)
-                            } label: {
-                                Text("复制")
-                                    .font(.caption)
-                                    .foregroundColor(.purple)
-                            }
-                        }
-                    }
-                } header: {
-                    Text(formData.category == .bankAccount ? "密码（可选）" : "密码")
-                } footer: {
-                    if formData.category == .general {
-                        Text("点击 ✨ 按钮可生成高强度随机密码")
                     }
                 }
 
@@ -202,129 +149,188 @@ struct AccountEditView: View {
         }
     }
 
-    // MARK: - 通用凭证字段
+    // MARK: - 密码输入行
 
-    private var generalCredentialFields: some View {
+    private func passwordField(isOptional: Bool, placeholder: String) -> some View {
         Group {
-            Section("基本信息") {
-                HStack {
-                    Image(systemName: "tag.fill")
-                        .foregroundColor(.purple)
-                    TextField("名称（如网站/App 名称）*", text: $formData.name)
-                        .textContentType(.name)
+            HStack {
+                Image(systemName: "key.fill").foregroundColor(.orange)
+                if showPassword {
+                    TextField(placeholder, text: $formData.password).textContentType(.password)
+                } else {
+                    SecureField(placeholder, text: $formData.password).textContentType(.password)
                 }
-
-                HStack {
-                    Image(systemName: "person.fill")
-                        .foregroundColor(.purple)
-                    TextField("账号/用户名 *", text: $formData.username)
-                        .textContentType(.username)
-                        .autocapitalization(.none)
+                Button { showPassword.toggle() } label: {
+                    Image(systemName: showPassword ? "eye.slash" : "eye").foregroundColor(.secondary)
+                }
+                if !isOptional {
+                    Button { generatePassword(); showPassword = true } label: {
+                        Image(systemName: "wand.and.stars").foregroundColor(.purple)
+                    }
                 }
             }
-
-            Section("可选信息") {
+            if showGeneratedPassword && !formData.password.isEmpty {
                 HStack {
-                    Image(systemName: "link")
-                        .foregroundColor(.purple)
-                    TextField("网址（可选）", text: $formData.url)
-                        .textContentType(.URL)
-                        .keyboardType(.URL)
-                        .autocapitalization(.none)
+                    Image(systemName: "sparkles").foregroundColor(.purple)
+                    Text("已生成随机密码").font(.caption).foregroundColor(.purple)
+                    Spacer()
+                    Button("复制") { viewModel.copyToClipboard(formData.password) }
+                        .font(.caption).foregroundColor(.purple)
                 }
             }
         }
     }
 
-    // MARK: - 银行账户字段
+    // MARK: - 通用输入组件
 
-    private var bankAccountFields: some View {
-        Group {
+    private func fieldRow(icon: String, color: Color, placeholder: String, text: Binding<String>, isSecure: Bool = false) -> some View {
+        HStack {
+            Image(systemName: icon).foregroundColor(color).frame(width: 24)
+            if isSecure {
+                SecureField(placeholder, text: text)
+            } else {
+                TextField(placeholder, text: text)
+            }
+        }
+    }
+
+    // MARK: - 分类字段
+
+    @ViewBuilder
+    private var categoryFields: some View {
+        switch formData.category {
+        // ── 通用凭证 / 登陆密码 / 互联网账户 ──
+        case .general, .loginPassword, .internetAccount:
+            Section("基本信息") {
+                fieldRow(icon: "tag.fill", color: .purple, placeholder: "名称 *", text: $formData.name)
+                fieldRow(icon: "person.fill", color: .purple, placeholder: "账号/用户名 *", text: $formData.username)
+            }
+            Section("可选信息") {
+                fieldRow(icon: "link", color: .purple, placeholder: "网址", text: $formData.url)
+            }
+
+        // ── 电子邮件账户 ──
+        case .emailAccount:
+            Section("基本信息") {
+                fieldRow(icon: "tag.fill", color: .blue, placeholder: "名称 *", text: $formData.name)
+                fieldRow(icon: "envelope.fill", color: .blue, placeholder: "邮箱地址 *", text: $formData.username)
+            }
+            Section("服务器设置（可选）") {
+                fieldRow(icon: "server.rack", color: .gray, placeholder: "邮件服务器", text: $formData.server)
+                fieldRow(icon: "number", color: .gray, placeholder: "端口", text: $formData.port)
+            }
+
+        // ── 银行账户 ──
+        case .bankAccount:
             Section("银行信息") {
-                HStack {
-                    Image(systemName: "building.columns.fill")
-                        .foregroundColor(.blue)
-                    TextField("银行名称 *", text: $formData.bankName)
-                }
-
-                HStack {
-                    Image(systemName: "creditcard.fill")
-                        .foregroundColor(.blue)
-
-                    if showCardNumber {
-                        TextField("银行卡号 *", text: $formData.cardNumber)
-                            .keyboardType(.numberPad)
-                    } else {
-                        SecureField("银行卡号 *", text: $formData.cardNumber)
-                            .keyboardType(.numberPad)
-                    }
-
-                    Button {
-                        showCardNumber.toggle()
-                    } label: {
-                        Image(systemName: showCardNumber ? "eye.slash" : "eye")
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                HStack {
-                    Image(systemName: "person.text.rectangle.fill")
-                        .foregroundColor(.blue)
-                    TextField("户名", text: $formData.cardholderName)
-                }
-
+                fieldRow(icon: "building.columns.fill", color: .blue, placeholder: "银行名称 *", text: $formData.bankName)
+                fieldRow(icon: "creditcard.fill", color: .blue, placeholder: "银行卡号 *", text: $formData.cardNumber, isSecure: !showCardNumber)
+                HStack { Button { showCardNumber.toggle() } label: { Image(systemName: showCardNumber ? "eye.slash" : "eye").foregroundColor(.secondary) }.buttonStyle(.plain); Spacer() }.listRowBackground(Color.clear)
+                fieldRow(icon: "person.text.rectangle.fill", color: .blue, placeholder: "户名", text: $formData.cardholderName)
                 Picker(selection: $formData.cardType) {
-                    ForEach(CardType.allCases, id: \.self) { type in
-                        Text(type.rawValue).tag(type)
-                    }
-                } label: {
-                    Label("卡类型", systemImage: "wallet.pass")
-                        .foregroundColor(.blue)
-                }
+                    ForEach(CardType.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                } label: { Label("卡类型", systemImage: "wallet.pass").foregroundColor(.blue) }
             }
-
             Section("安全信息") {
-                HStack {
-                    Image(systemName: "number.square.fill")
-                        .foregroundColor(.orange)
-
-                    if showCVV {
-                        TextField("CVV 安全码", text: $formData.cvv)
-                            .keyboardType(.numberPad)
-                    } else {
-                        SecureField("CVV 安全码", text: $formData.cvv)
-                            .keyboardType(.numberPad)
-                    }
-
-                    Button {
-                        showCVV.toggle()
-                    } label: {
-                        Image(systemName: showCVV ? "eye.slash" : "eye")
-                            .foregroundColor(.secondary)
-                    }
-                }
-
-                HStack {
-                    Image(systemName: "calendar")
-                        .foregroundColor(.orange)
-                    TextField("有效期（如 12/28）", text: $formData.expiryDate)
-                        .keyboardType(.numbersAndPunctuation)
-                }
+                fieldRow(icon: "number.square.fill", color: .orange, placeholder: "CVV 安全码", text: $formData.cvv, isSecure: !showCVV)
+                HStack { Button { showCVV.toggle() } label: { Image(systemName: showCVV ? "eye.slash" : "eye").foregroundColor(.secondary) }.buttonStyle(.plain); Spacer() }.listRowBackground(Color.clear)
+                fieldRow(icon: "calendar", color: .orange, placeholder: "有效期（如 12/28）", text: $formData.expiryDate)
+            }
+            Section("其他（可选）") {
+                fieldRow(icon: "mappin.and.ellipse", color: .gray, placeholder: "开户行", text: $formData.branch)
+                fieldRow(icon: "phone.fill", color: .gray, placeholder: "预留手机号", text: $formData.phone)
             }
 
-            Section("其他信息（可选）") {
-                HStack {
-                    Image(systemName: "mappin.and.ellipse")
-                        .foregroundColor(.gray)
-                    TextField("开户行", text: $formData.branch)
-                }
+        // ── 信用卡 ──
+        case .creditCard:
+            Section("卡片信息") {
+                fieldRow(icon: "building.columns.fill", color: .red, placeholder: "发卡银行 *", text: $formData.bankName)
+                fieldRow(icon: "creditcard.fill", color: .red, placeholder: "卡号 *", text: $formData.cardNumber, isSecure: !showCardNumber)
+                HStack { Button { showCardNumber.toggle() } label: { Image(systemName: showCardNumber ? "eye.slash" : "eye").foregroundColor(.secondary) }.buttonStyle(.plain); Spacer() }.listRowBackground(Color.clear)
+                fieldRow(icon: "person.text.rectangle.fill", color: .red, placeholder: "持卡人姓名", text: $formData.cardholderName)
+                fieldRow(icon: "calendar", color: .orange, placeholder: "有效期（MM/YY）*", text: $formData.expiryDate)
+                fieldRow(icon: "number.square.fill", color: .orange, placeholder: "CVV", text: $formData.cvv, isSecure: !showCVV)
+                HStack { Button { showCVV.toggle() } label: { Image(systemName: showCVV ? "eye.slash" : "eye").foregroundColor(.secondary) }.buttonStyle(.plain); Spacer() }.listRowBackground(Color.clear)
+            }
+            Section("账单信息（可选）") {
+                fieldRow(icon: "calendar.badge.clock", color: .gray, placeholder: "账单日", text: $formData.billingDay)
+                fieldRow(icon: "calendar.badge.checkmark", color: .gray, placeholder: "还款日", text: $formData.repaymentDay)
+                fieldRow(icon: "banknote", color: .gray, placeholder: "信用额度", text: $formData.creditLimit)
+                fieldRow(icon: "phone.fill", color: .gray, placeholder: "银行客服电话", text: $formData.phone)
+            }
 
-                HStack {
-                    Image(systemName: "phone.fill")
-                        .foregroundColor(.gray)
-                    TextField("预留手机号", text: $formData.phone)
-                        .keyboardType(.phonePad)
-                }
+        // ── 会员 ──
+        case .membership:
+            Section("会员信息") {
+                fieldRow(icon: "tag.fill", color: .orange, placeholder: "商户/品牌名称 *", text: $formData.name)
+                fieldRow(icon: "person.fill", color: .orange, placeholder: "会员号/卡号 *", text: $formData.documentNumber)
+                fieldRow(icon: "star.fill", color: .orange, placeholder: "会员等级", text: $formData.membershipLevel)
+                fieldRow(icon: "calendar", color: .gray, placeholder: "有效期", text: $formData.expiryDate)
+            }
+            Section("可选信息") {
+                fieldRow(icon: "link", color: .gray, placeholder: "官网/APP 链接", text: $formData.url)
+            }
+
+        // ── 社保 ──
+        case .socialSecurity:
+            Section("社保信息") {
+                fieldRow(icon: "tag.fill", color: .teal, placeholder: "名称 *", text: $formData.name)
+                fieldRow(icon: "person.fill", color: .teal, placeholder: "姓名 *", text: $formData.fullName)
+                fieldRow(icon: "number.square.fill", color: .teal, placeholder: "社保号码 *", text: $formData.documentNumber)
+                fieldRow(icon: "building.2.fill", color: .gray, placeholder: "发卡机构", text: $formData.issuingAuthority)
+                fieldRow(icon: "calendar", color: .gray, placeholder: "有效期", text: $formData.expiryDate)
+            }
+
+        // ── 驾照 / 身份证 / 护照 ──
+        case .driversLicense, .idCard, .passport:
+            let c = formData.category.color
+            Section("证件信息") {
+                fieldRow(icon: "tag.fill", color: c, placeholder: "名称 *", text: $formData.name)
+                fieldRow(icon: "person.fill", color: c, placeholder: "姓名 *", text: $formData.fullName)
+                let docLabel = formData.category == .idCard ? "身份证号 *"
+                    : formData.category == .passport ? "护照号 *" : "驾照号 *"
+                fieldRow(icon: "number.square.fill", color: c, placeholder: docLabel, text: $formData.documentNumber)
+                let authLabel = formData.category == .idCard ? "签发机关"
+                    : formData.category == .passport ? "签发国家/机关" : "发证机关"
+                fieldRow(icon: "building.2.fill", color: .gray, placeholder: authLabel, text: $formData.issuingAuthority)
+                fieldRow(icon: "calendar", color: .gray, placeholder: "有效期", text: $formData.expiryDate)
+            }
+
+        // ── Wi-Fi 路由器 ──
+        case .wifiRouter:
+            Section("Wi-Fi 信息") {
+                fieldRow(icon: "tag.fill", color: .blue, placeholder: "名称 *", text: $formData.name)
+                fieldRow(icon: "wifi", color: .blue, placeholder: "SSID（Wi-Fi 名称）*", text: $formData.ssid)
+                fieldRow(icon: "lock.shield.fill", color: .gray, placeholder: "安全类型（WPA2/WPA3/WEP）", text: $formData.securityType)
+            }
+
+        // ── 保险 ──
+        case .insurance:
+            Section("保险信息") {
+                fieldRow(icon: "tag.fill", color: .mint, placeholder: "名称（如险种名称）*", text: $formData.name)
+                fieldRow(icon: "building.columns.fill", color: .mint, placeholder: "保险公司", text: $formData.bankName)
+                fieldRow(icon: "umbrella.fill", color: .mint, placeholder: "险种", text: $formData.insuranceType)
+                fieldRow(icon: "person.fill", color: .mint, placeholder: "被保人", text: $formData.insuredPerson)
+                fieldRow(icon: "doc.text.fill", color: .gray, placeholder: "保单号", text: $formData.documentNumber)
+                fieldRow(icon: "calendar", color: .gray, placeholder: "有效期", text: $formData.expiryDate)
+                fieldRow(icon: "phone.fill", color: .gray, placeholder: "客服电话", text: $formData.phone)
+            }
+
+        // ── 网路服务提供商 ──
+        case .isp:
+            Section("服务信息") {
+                fieldRow(icon: "tag.fill", color: .gray, placeholder: "服务商名称 *", text: $formData.name)
+                fieldRow(icon: "person.fill", color: .gray, placeholder: "账号 *", text: $formData.username)
+                fieldRow(icon: "doc.text.fill", color: .gray, placeholder: "套餐", text: $formData.networkType)
+                fieldRow(icon: "phone.fill", color: .gray, placeholder: "客服电话", text: $formData.phone)
+            }
+
+        // ── 加密币钱包 ──
+        case .cryptoWallet:
+            Section("钱包信息") {
+                fieldRow(icon: "tag.fill", color: .orange, placeholder: "名称 *", text: $formData.name)
+                fieldRow(icon: "bitcoinsign.circle", color: .orange, placeholder: "钱包地址 *", text: $formData.walletAddress)
+                fieldRow(icon: "circle.hexagongrid", color: .gray, placeholder: "网络类型（如 ERC20/TRC20）", text: $formData.networkType)
             }
         }
     }
@@ -335,11 +341,19 @@ struct AccountEditView: View {
         isSaving = true
         errorMessage = nil
 
-        // 如果银行账户未填 name，自动拼接银行名称+卡类型
-        if formData.category == .bankAccount && formData.name.isEmpty {
-            let typeStr = formData.cardType.rawValue
-            if !formData.bankName.isEmpty {
-                formData.name = "\(formData.bankName) \(typeStr)"
+        // 自动填充名称（如果用户未填）
+        if formData.name.isEmpty {
+            switch formData.category {
+            case .bankAccount:
+                let t = formData.cardType.rawValue
+                if !formData.bankName.isEmpty { formData.name = "\(formData.bankName) \(t)" }
+            case .creditCard:
+                if !formData.bankName.isEmpty { formData.name = "\(formData.bankName) 信用卡" }
+            case .wifiRouter:
+                if !formData.ssid.isEmpty { formData.name = formData.ssid }
+            case .emailAccount:
+                if !formData.username.isEmpty { formData.name = formData.username }
+            default: break
             }
         }
 

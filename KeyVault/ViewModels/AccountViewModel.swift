@@ -50,6 +50,17 @@ final class AccountViewModel {
         }
     }
 
+    // MARK: - 加解密辅助
+
+    private func decryptOpt(_ data: Data?) throws -> String {
+        guard let data else { return "" }
+        return try securityService.decryptString(data)
+    }
+
+    private func encryptOpt(_ str: String) throws -> Data? {
+        str.isEmpty ? nil : try securityService.encryptString(str)
+    }
+
     // MARK: - 配置
 
     /// 注入 SwiftData ModelContext（由 View 通过 .modelContainer 环境值传入）
@@ -83,19 +94,33 @@ final class AccountViewModel {
                     name: try securityService.decryptString(account.encryptedName),
                     username: try securityService.decryptString(account.encryptedUsername),
                     password: try securityService.decryptString(account.encryptedPassword),
-                    url: try account.encryptedURL.map { try securityService.decryptString($0) } ?? "",
-                    notes: try account.encryptedNotes.map { try securityService.decryptString($0) } ?? "",
-                    // 银行账户字段
-                    bankName: try account.encryptedBankName.map { try securityService.decryptString($0) } ?? "",
-                    cardNumber: try account.encryptedCardNumber.map { try securityService.decryptString($0) } ?? "",
-                    cardholderName: try account.encryptedCardholderName.map { try securityService.decryptString($0) } ?? "",
+                    url: try decryptOpt(account.encryptedURL),
+                    notes: try decryptOpt(account.encryptedNotes),
+                    bankName: try decryptOpt(account.encryptedBankName),
+                    cardNumber: try decryptOpt(account.encryptedCardNumber),
+                    cardholderName: try decryptOpt(account.encryptedCardholderName),
                     cardType: (try account.encryptedCardType.map { raw in
                         CardType(rawValue: try securityService.decryptString(raw)) ?? .debit
                     }) ?? .debit,
-                    branch: try account.encryptedBranch.map { try securityService.decryptString($0) } ?? "",
-                    phone: try account.encryptedPhone.map { try securityService.decryptString($0) } ?? "",
-                    cvv: try account.encryptedCVV.map { try securityService.decryptString($0) } ?? "",
-                    expiryDate: try account.encryptedExpiryDate.map { try securityService.decryptString($0) } ?? "",
+                    branch: try decryptOpt(account.encryptedBranch),
+                    phone: try decryptOpt(account.encryptedPhone),
+                    cvv: try decryptOpt(account.encryptedCVV),
+                    expiryDate: try decryptOpt(account.encryptedExpiryDate),
+                    billingDay: try decryptOpt(account.encryptedBillingDay),
+                    repaymentDay: try decryptOpt(account.encryptedRepaymentDay),
+                    creditLimit: try decryptOpt(account.encryptedCreditLimit),
+                    fullName: try decryptOpt(account.encryptedFullName),
+                    documentNumber: try decryptOpt(account.encryptedDocumentNumber),
+                    issuingAuthority: try decryptOpt(account.encryptedIssuingAuthority),
+                    ssid: try decryptOpt(account.encryptedSSID),
+                    securityType: try decryptOpt(account.encryptedSecurityType),
+                    membershipLevel: try decryptOpt(account.encryptedMembershipLevel),
+                    insuranceType: try decryptOpt(account.encryptedInsuranceType),
+                    insuredPerson: try decryptOpt(account.encryptedInsuredPerson),
+                    walletAddress: try decryptOpt(account.encryptedWalletAddress),
+                    networkType: try decryptOpt(account.encryptedNetworkType),
+                    server: try decryptOpt(account.encryptedServer),
+                    port: try decryptOpt(account.encryptedPort),
                     createdAt: account.createdAt,
                     modifiedAt: account.modifiedAt
                 )
@@ -119,18 +144,31 @@ final class AccountViewModel {
         let encryptedName = try securityService.encryptString(formData.name)
         let encryptedUsername = try securityService.encryptString(formData.username)
         let encryptedPassword = try securityService.encryptString(formData.password)
-        let encryptedURL = formData.url.isEmpty ? nil : try securityService.encryptString(formData.url)
-        let encryptedNotes = formData.notes.isEmpty ? nil : try securityService.encryptString(formData.notes)
-
-        // 银行专属字段
-        let encryptedBankName = formData.bankName.isEmpty ? nil : try securityService.encryptString(formData.bankName)
-        let encryptedCardNumber = formData.cardNumber.isEmpty ? nil : try securityService.encryptString(formData.cardNumber)
-        let encryptedCardholderName = formData.cardholderName.isEmpty ? nil : try securityService.encryptString(formData.cardholderName)
+        let encryptedURL = try encryptOpt(formData.url)
+        let encryptedNotes = try encryptOpt(formData.notes)
+        let encryptedBankName = try encryptOpt(formData.bankName)
+        let encryptedCardNumber = try encryptOpt(formData.cardNumber)
+        let encryptedCardholderName = try encryptOpt(formData.cardholderName)
         let encryptedCardType = try securityService.encryptString(formData.cardType.rawValue)
-        let encryptedBranch = formData.branch.isEmpty ? nil : try securityService.encryptString(formData.branch)
-        let encryptedPhone = formData.phone.isEmpty ? nil : try securityService.encryptString(formData.phone)
-        let encryptedCVV = formData.cvv.isEmpty ? nil : try securityService.encryptString(formData.cvv)
-        let encryptedExpiryDate = formData.expiryDate.isEmpty ? nil : try securityService.encryptString(formData.expiryDate)
+        let encryptedBranch = try encryptOpt(formData.branch)
+        let encryptedPhone = try encryptOpt(formData.phone)
+        let encryptedCVV = try encryptOpt(formData.cvv)
+        let encryptedExpiryDate = try encryptOpt(formData.expiryDate)
+        let encryptedBillingDay = try encryptOpt(formData.billingDay)
+        let encryptedRepaymentDay = try encryptOpt(formData.repaymentDay)
+        let encryptedCreditLimit = try encryptOpt(formData.creditLimit)
+        let encryptedFullName = try encryptOpt(formData.fullName)
+        let encryptedDocumentNumber = try encryptOpt(formData.documentNumber)
+        let encryptedIssuingAuthority = try encryptOpt(formData.issuingAuthority)
+        let encryptedSSID = try encryptOpt(formData.ssid)
+        let encryptedSecurityType = try encryptOpt(formData.securityType)
+        let encryptedMembershipLevel = try encryptOpt(formData.membershipLevel)
+        let encryptedInsuranceType = try encryptOpt(formData.insuranceType)
+        let encryptedInsuredPerson = try encryptOpt(formData.insuredPerson)
+        let encryptedWalletAddress = try encryptOpt(formData.walletAddress)
+        let encryptedNetworkType = try encryptOpt(formData.networkType)
+        let encryptedServer = try encryptOpt(formData.server)
+        let encryptedPort = try encryptOpt(formData.port)
 
         let account = Account(
             category: formData.category.rawValue,
@@ -146,7 +184,22 @@ final class AccountViewModel {
             encryptedBranch: encryptedBranch,
             encryptedPhone: encryptedPhone,
             encryptedCVV: encryptedCVV,
-            encryptedExpiryDate: encryptedExpiryDate
+            encryptedExpiryDate: encryptedExpiryDate,
+            encryptedFullName: encryptedFullName,
+            encryptedDocumentNumber: encryptedDocumentNumber,
+            encryptedIssuingAuthority: encryptedIssuingAuthority,
+            encryptedSSID: encryptedSSID,
+            encryptedSecurityType: encryptedSecurityType,
+            encryptedBillingDay: encryptedBillingDay,
+            encryptedRepaymentDay: encryptedRepaymentDay,
+            encryptedCreditLimit: encryptedCreditLimit,
+            encryptedMembershipLevel: encryptedMembershipLevel,
+            encryptedInsuranceType: encryptedInsuranceType,
+            encryptedInsuredPerson: encryptedInsuredPerson,
+            encryptedWalletAddress: encryptedWalletAddress,
+            encryptedNetworkType: encryptedNetworkType,
+            encryptedServer: encryptedServer,
+            encryptedPort: encryptedPort
         )
         context.insert(account)
         try context.save()
@@ -175,18 +228,31 @@ final class AccountViewModel {
         account.encryptedName = try securityService.encryptString(formData.name)
         account.encryptedUsername = try securityService.encryptString(formData.username)
         account.encryptedPassword = try securityService.encryptString(formData.password)
-        account.encryptedURL = formData.url.isEmpty ? nil : try securityService.encryptString(formData.url)
-        account.encryptedNotes = formData.notes.isEmpty ? nil : try securityService.encryptString(formData.notes)
-
-        // 银行专属字段
-        account.encryptedBankName = formData.bankName.isEmpty ? nil : try securityService.encryptString(formData.bankName)
-        account.encryptedCardNumber = formData.cardNumber.isEmpty ? nil : try securityService.encryptString(formData.cardNumber)
-        account.encryptedCardholderName = formData.cardholderName.isEmpty ? nil : try securityService.encryptString(formData.cardholderName)
+        account.encryptedURL = try encryptOpt(formData.url)
+        account.encryptedNotes = try encryptOpt(formData.notes)
+        account.encryptedBankName = try encryptOpt(formData.bankName)
+        account.encryptedCardNumber = try encryptOpt(formData.cardNumber)
+        account.encryptedCardholderName = try encryptOpt(formData.cardholderName)
         account.encryptedCardType = try securityService.encryptString(formData.cardType.rawValue)
-        account.encryptedBranch = formData.branch.isEmpty ? nil : try securityService.encryptString(formData.branch)
-        account.encryptedPhone = formData.phone.isEmpty ? nil : try securityService.encryptString(formData.phone)
-        account.encryptedCVV = formData.cvv.isEmpty ? nil : try securityService.encryptString(formData.cvv)
-        account.encryptedExpiryDate = formData.expiryDate.isEmpty ? nil : try securityService.encryptString(formData.expiryDate)
+        account.encryptedBranch = try encryptOpt(formData.branch)
+        account.encryptedPhone = try encryptOpt(formData.phone)
+        account.encryptedCVV = try encryptOpt(formData.cvv)
+        account.encryptedExpiryDate = try encryptOpt(formData.expiryDate)
+        account.encryptedBillingDay = try encryptOpt(formData.billingDay)
+        account.encryptedRepaymentDay = try encryptOpt(formData.repaymentDay)
+        account.encryptedCreditLimit = try encryptOpt(formData.creditLimit)
+        account.encryptedFullName = try encryptOpt(formData.fullName)
+        account.encryptedDocumentNumber = try encryptOpt(formData.documentNumber)
+        account.encryptedIssuingAuthority = try encryptOpt(formData.issuingAuthority)
+        account.encryptedSSID = try encryptOpt(formData.ssid)
+        account.encryptedSecurityType = try encryptOpt(formData.securityType)
+        account.encryptedMembershipLevel = try encryptOpt(formData.membershipLevel)
+        account.encryptedInsuranceType = try encryptOpt(formData.insuranceType)
+        account.encryptedInsuredPerson = try encryptOpt(formData.insuredPerson)
+        account.encryptedWalletAddress = try encryptOpt(formData.walletAddress)
+        account.encryptedNetworkType = try encryptOpt(formData.networkType)
+        account.encryptedServer = try encryptOpt(formData.server)
+        account.encryptedPort = try encryptOpt(formData.port)
 
         account.modifiedAt = Date()
         try context.save()

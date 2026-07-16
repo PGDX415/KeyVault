@@ -7,27 +7,67 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 
 // MARK: - 记录分类
 
-/// 保险箱记录分类（可扩展）
+/// 保险箱记录分类
 enum VaultCategory: String, CaseIterable, Codable {
     case general = "通用凭证"
+    case loginPassword = "登陆密码"
+    case emailAccount = "电子邮件账户"
+    case internetAccount = "互联网账户"
     case bankAccount = "银行账户"
+    case creditCard = "信用卡"
+    case membership = "会员"
+    case socialSecurity = "社保"
+    case driversLicense = "驾照"
+    case idCard = "身份证"
+    case passport = "护照"
+    case wifiRouter = "Wi-Fi路由器"
+    case insurance = "保险"
+    case isp = "网路服务提供商"
+    case cryptoWallet = "加密币钱包"
 
-    /// 用于 UI 展示的 SF Symbol 图标
+    /// SF Symbol 图标
     var iconName: String {
         switch self {
-        case .general: return "globe"
-        case .bankAccount: return "building.columns.fill"
+        case .general:          return "globe"
+        case .loginPassword:    return "key.fill"
+        case .emailAccount:     return "envelope.fill"
+        case .internetAccount:  return "safari.fill"
+        case .bankAccount:      return "building.columns.fill"
+        case .creditCard:       return "creditcard.fill"
+        case .membership:       return "person.fill.checkmark"
+        case .socialSecurity:   return "building.2.fill"
+        case .driversLicense:   return "car.fill"
+        case .idCard:           return "person.text.rectangle.fill"
+        case .passport:         return "book.fill"
+        case .wifiRouter:       return "wifi"
+        case .insurance:        return "umbrella.fill"
+        case .isp:              return "network"
+        case .cryptoWallet:     return "bitcoinsign.circle"
         }
     }
 
     /// 分类对应颜色
-    var color: String {
+    var color: Color {
         switch self {
-        case .general: return "purple"
-        case .bankAccount: return "blue"
+        case .general:          return .purple
+        case .loginPassword:    return .orange
+        case .emailAccount:     return .blue
+        case .internetAccount:  return .cyan
+        case .bankAccount:      return .blue
+        case .creditCard:       return .red
+        case .membership:       return .orange
+        case .socialSecurity:   return .teal
+        case .driversLicense:   return .indigo
+        case .idCard:           return .purple
+        case .passport:         return .green
+        case .wifiRouter:       return .blue
+        case .insurance:        return .mint
+        case .isp:              return .gray
+        case .cryptoWallet:     return .orange
         }
     }
 }
@@ -97,6 +137,39 @@ final class Account {
     /// AES-GCM 加密后的有效期
     var encryptedExpiryDate: Data?
 
+    // ======================== 扩展加密字段（各分类专属）========================
+
+    /// 姓名（身份证/驾照/护照/社保）
+    var encryptedFullName: Data?
+    /// 证件号码（身份证号/驾照号/护照号/社保号/会员号）
+    var encryptedDocumentNumber: Data?
+    /// 签发机关 / 发卡机构
+    var encryptedIssuingAuthority: Data?
+    /// Wi-Fi 名称（SSID）
+    var encryptedSSID: Data?
+    /// Wi-Fi 安全类型（WPA2/WPA3/WEP）
+    var encryptedSecurityType: Data?
+    /// 信用卡账单日
+    var encryptedBillingDay: Data?
+    /// 信用卡还款日
+    var encryptedRepaymentDay: Data?
+    /// 信用卡额度
+    var encryptedCreditLimit: Data?
+    /// 会员等级
+    var encryptedMembershipLevel: Data?
+    /// 保险险种
+    var encryptedInsuranceType: Data?
+    /// 被保人
+    var encryptedInsuredPerson: Data?
+    /// 加密币钱包地址
+    var encryptedWalletAddress: Data?
+    /// 网络类型（加密币）/ ISP 套餐
+    var encryptedNetworkType: Data?
+    /// 邮件服务器
+    var encryptedServer: Data?
+    /// 邮件端口
+    var encryptedPort: Data?
+
     // ======================== 非敏感元数据 ========================
 
     /// 创建时间
@@ -121,6 +194,21 @@ final class Account {
         encryptedPhone: Data? = nil,
         encryptedCVV: Data? = nil,
         encryptedExpiryDate: Data? = nil,
+        encryptedFullName: Data? = nil,
+        encryptedDocumentNumber: Data? = nil,
+        encryptedIssuingAuthority: Data? = nil,
+        encryptedSSID: Data? = nil,
+        encryptedSecurityType: Data? = nil,
+        encryptedBillingDay: Data? = nil,
+        encryptedRepaymentDay: Data? = nil,
+        encryptedCreditLimit: Data? = nil,
+        encryptedMembershipLevel: Data? = nil,
+        encryptedInsuranceType: Data? = nil,
+        encryptedInsuredPerson: Data? = nil,
+        encryptedWalletAddress: Data? = nil,
+        encryptedNetworkType: Data? = nil,
+        encryptedServer: Data? = nil,
+        encryptedPort: Data? = nil,
         createdAt: Date = Date(),
         modifiedAt: Date = Date()
     ) {
@@ -139,6 +227,21 @@ final class Account {
         self.encryptedPhone = encryptedPhone
         self.encryptedCVV = encryptedCVV
         self.encryptedExpiryDate = encryptedExpiryDate
+        self.encryptedFullName = encryptedFullName
+        self.encryptedDocumentNumber = encryptedDocumentNumber
+        self.encryptedIssuingAuthority = encryptedIssuingAuthority
+        self.encryptedSSID = encryptedSSID
+        self.encryptedSecurityType = encryptedSecurityType
+        self.encryptedBillingDay = encryptedBillingDay
+        self.encryptedRepaymentDay = encryptedRepaymentDay
+        self.encryptedCreditLimit = encryptedCreditLimit
+        self.encryptedMembershipLevel = encryptedMembershipLevel
+        self.encryptedInsuranceType = encryptedInsuranceType
+        self.encryptedInsuredPerson = encryptedInsuredPerson
+        self.encryptedWalletAddress = encryptedWalletAddress
+        self.encryptedNetworkType = encryptedNetworkType
+        self.encryptedServer = encryptedServer
+        self.encryptedPort = encryptedPort
         self.createdAt = createdAt
         self.modifiedAt = modifiedAt
     }
@@ -160,7 +263,7 @@ struct AccountDisplay: Identifiable, Hashable {
     var url: String
     var notes: String
 
-    // 银行账户专属字段
+    // 银行/信用卡专属字段
     var bankName: String
     var cardNumber: String
     var cardholderName: String
@@ -169,6 +272,35 @@ struct AccountDisplay: Identifiable, Hashable {
     var phone: String
     var cvv: String
     var expiryDate: String
+
+    // 信用卡扩展字段
+    var billingDay: String
+    var repaymentDay: String
+    var creditLimit: String
+
+    // 证件类字段（身份证/驾照/护照/社保）
+    var fullName: String
+    var documentNumber: String
+    var issuingAuthority: String
+
+    // Wi-Fi 字段
+    var ssid: String
+    var securityType: String
+
+    // 会员字段
+    var membershipLevel: String
+
+    // 保险字段
+    var insuranceType: String
+    var insuredPerson: String
+
+    // 加密币字段
+    var walletAddress: String
+    var networkType: String
+
+    // 邮箱字段
+    var server: String
+    var port: String
 
     // 元数据
     let createdAt: Date
@@ -201,7 +333,7 @@ struct AccountFormData {
     var url: String = ""
     var notes: String = ""
 
-    // 银行账户
+    // 银行/信用卡
     var bankName: String = ""
     var cardNumber: String = ""
     var cardholderName: String = ""
@@ -210,6 +342,33 @@ struct AccountFormData {
     var phone: String = ""
     var cvv: String = ""
     var expiryDate: String = ""
+    var billingDay: String = ""
+    var repaymentDay: String = ""
+    var creditLimit: String = ""
+
+    // 证件类
+    var fullName: String = ""
+    var documentNumber: String = ""
+    var issuingAuthority: String = ""
+
+    // Wi-Fi
+    var ssid: String = ""
+    var securityType: String = ""
+
+    // 会员
+    var membershipLevel: String = ""
+
+    // 保险
+    var insuranceType: String = ""
+    var insuredPerson: String = ""
+
+    // 加密币
+    var walletAddress: String = ""
+    var networkType: String = ""
+
+    // 邮箱
+    var server: String = ""
+    var port: String = ""
 
     /// 从 AccountDisplay 填充编辑数据
     init(from display: AccountDisplay) {
@@ -227,6 +386,21 @@ struct AccountFormData {
         self.phone = display.phone
         self.cvv = display.cvv
         self.expiryDate = display.expiryDate
+        self.billingDay = display.billingDay
+        self.repaymentDay = display.repaymentDay
+        self.creditLimit = display.creditLimit
+        self.fullName = display.fullName
+        self.documentNumber = display.documentNumber
+        self.issuingAuthority = display.issuingAuthority
+        self.ssid = display.ssid
+        self.securityType = display.securityType
+        self.membershipLevel = display.membershipLevel
+        self.insuranceType = display.insuranceType
+        self.insuredPerson = display.insuredPerson
+        self.walletAddress = display.walletAddress
+        self.networkType = display.networkType
+        self.server = display.server
+        self.port = display.port
     }
 
     /// 空白表单（用于新增）
@@ -238,11 +412,19 @@ struct AccountFormData {
         guard !trimmedName.isEmpty else { return false }
 
         switch category {
-        case .general:
-            return !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-                   !password.isEmpty
         case .bankAccount:
             return !cardNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .creditCard:
+            return !cardNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .wifiRouter:
+            return !ssid.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .cryptoWallet:
+            return !walletAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .idCard, .driversLicense, .passport, .socialSecurity:
+            return !documentNumber.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        default:
+            return !username.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+                   !password.isEmpty
         }
     }
 }
