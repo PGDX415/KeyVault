@@ -44,6 +44,60 @@ final class SecurityService {
     private let wrappedKeyTag = "com.keyvault.wrappedMasterKey"
     private let saltTag = "com.keyvault.passwordSalt"
 
+    // MARK: - 自动锁定
+
+    /// 自动锁定超时时长（秒），默认 60 秒
+    /// - 0：立即锁定（切后台即锁）
+    /// - 30 / 60 / 120 / 300：在后台超过对应秒数后锁定
+    var autoLockTimeout: TimeInterval {
+        get {
+            let raw = UserDefaults.standard.double(forKey: "autoLockTimeout")
+            return raw > 0 ? raw : 60
+        }
+        set {
+            UserDefaults.standard.set(newValue, forKey: "autoLockTimeout")
+        }
+    }
+
+    /// 可选超时时长列表（供 UI 选择）
+    static let autoLockOptions: [(label: String, seconds: TimeInterval)] = [
+        ("立即锁定", 0),
+        ("30 秒后", 30),
+        ("1 分钟后", 60),
+        ("2 分钟后", 120),
+        ("5 分钟后", 300)
+    ]
+
+    /// 后台锁定延时任务
+    private var autoLockWorkItem: DispatchWorkItem?
+
+    /// 开始延时锁定倒计时（进入后台时调用）
+    func scheduleAutoLock() {
+        cancelAutoLock()
+
+        let timeout = autoLockTimeout
+        // 0 = 立即锁定
+        guard timeout > 0 else {
+            lock()
+            return
+        }
+
+        let workItem = DispatchWorkItem { [weak self] in
+            self?.lock()
+        }
+        autoLockWorkItem = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + timeout,
+            execute: workItem
+        )
+    }
+
+    /// 取消延时锁定（回到前台时调用）
+    func cancelAutoLock() {
+        autoLockWorkItem?.cancel()
+        autoLockWorkItem = nil
+    }
+
     // MARK: - 初始化
 
     private init() {
@@ -173,8 +227,9 @@ final class SecurityService {
         self.hasPasswordError = false
     }
 
-    /// 锁定保险箱：清除内存中的主密钥
+    /// 锁定保险箱：清除内存中的主密钥，并取消延时任务
     func lock() {
+        cancelAutoLock()
         self.masterKey = nil
         self.isUnlocked = false
     }

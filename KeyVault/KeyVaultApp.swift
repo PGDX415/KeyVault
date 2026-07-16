@@ -38,10 +38,16 @@ struct KeyVaultApp: App {
             AppRootView()
         }
         .modelContainer(sharedModelContainer)
-        // 监听应用生命周期，切后台时自动锁定
         .onChange(of: scenePhase) { _, newPhase in
-            if newPhase == .background || newPhase == .inactive {
-                securityService.lock()
+            switch newPhase {
+            case .background, .inactive:
+                // 切后台时启动延时锁定计时器
+                securityService.scheduleAutoLock()
+            case .active:
+                // 回到前台时取消计时器
+                securityService.cancelAutoLock()
+            @unknown default:
+                break
             }
         }
     }

@@ -15,6 +15,7 @@ struct AccountListView: View {
     @State private var securityService = SecurityService.shared
 
     @State private var showAddSheet = false
+    @State private var showSettings = false
     @State private var selectedAccount: AccountDisplay?
     @State private var showDeleteAlert = false
     @State private var accountToDelete: AccountDisplay?
@@ -26,13 +27,22 @@ struct AccountListView: View {
                 .navigationTitle("密钥阁")
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
-                        Button {
-                            securityService.lock()
-                        } label: {
-                            Image(systemName: "lock.fill")
-                                .foregroundColor(.purple)
+                        HStack(spacing: 12) {
+                            Button {
+                                showSettings = true
+                            } label: {
+                                Image(systemName: "gear")
+                                    .foregroundColor(.purple)
+                            }
+                            .help("设置")
+                            Button {
+                                securityService.lock()
+                            } label: {
+                                Image(systemName: "lock.fill")
+                                    .foregroundColor(.purple)
+                            }
+                            .help("锁定保险箱")
                         }
-                        .help("锁定保险箱")
                     }
                 }
                 .searchable(
@@ -50,6 +60,9 @@ struct AccountListView: View {
         }
         .sheet(isPresented: $showAddSheet) {
             AccountEditView(mode: .add, viewModel: viewModel)
+        }
+        .sheet(isPresented: $showSettings) {
+            SettingsView()
         }
         .alert("确认删除", isPresented: $showDeleteAlert) {
             Button("取消", role: .cancel) {}
