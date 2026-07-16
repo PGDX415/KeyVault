@@ -87,7 +87,7 @@ enum CardType: String, CaseIterable, Codable {
 /// 支持多种分类（通用凭证、银行账户等），各分类的专属字段以可选形式存在
 @Model
 final class Account {
-    @Attribute(.unique) var id: UUID
+    var id: UUID = UUID()
 
     // ======================== 分类 ========================
 
@@ -97,13 +97,13 @@ final class Account {
     // ======================== 通用字段（所有分类共用）========================
 
     /// AES-GCM 加密后的名称
-    var encryptedName: Data
+    var encryptedName: Data = Data()
 
     /// AES-GCM 加密后的用户名/账号
-    var encryptedUsername: Data
+    var encryptedUsername: Data = Data()
 
     /// AES-GCM 加密后的密码
-    var encryptedPassword: Data
+    var encryptedPassword: Data = Data()
 
     /// AES-GCM 加密后的网址（可选）
     var encryptedURL: Data?
@@ -173,10 +173,10 @@ final class Account {
     // ======================== 非敏感元数据 ========================
 
     /// 创建时间
-    var createdAt: Date
+    var createdAt: Date = Date()
 
     /// 最后修改时间
-    var modifiedAt: Date
+    var modifiedAt: Date = Date()
 
     init(
         id: UUID = UUID(),

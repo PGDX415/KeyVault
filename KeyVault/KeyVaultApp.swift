@@ -26,16 +26,53 @@ struct KeyVaultApp: App {
             cloudKitDatabase: .private("iCloud.com.gongdexin.paul.KeyVault")
         )
 
+        // 尝试创建容器；若旧数据库 schema 不兼容，则删除旧库重建
+        let storeURL = URL.applicationSupportDirectory
+            .appendingPathComponent("default.store")
+        let walURL = storeURL.appendingPathExtension("wal")
+        let shmURL = storeURL.appendingPathExtension("shm")
+
+        func cleanupOldStore() {
+            for url in [storeURL, walURL, shmURL] {
+                try? FileManager.default.removeItem(at: url)
+            }
+        }
+
         do {
             let container = try ModelContainer(
                 for: schema,
                 configurations: [modelConfiguration]
             )
-            // 启动远程同步监听
             SyncMonitor.shared.startObserving(container: container)
             return container
         } catch {
-            fatalError("无法创建数据库容器: \(error)")
+            // schema 不兼容 → 删除旧数据库重试
+            cleanupOldStore()
+            do {
+                let container = try ModelContainer(
+                    for: schema,
+                    configurations: [modelConfiguration]
+                )
+                SyncMonitor.shared.startObserving(container: container)
+                return container
+            } catch {
+                // CloudKit 不可用时降级为纯本地存储
+                cleanupOldStore()
+                let localConfig = ModelConfiguration(
+                    schema: schema,
+                    isStoredInMemoryOnly: false
+                )
+                do {
+                    let container = try ModelContainer(
+                        for: schema,
+                        configurations: [localConfig]
+                    )
+                    print("⚠️ CloudKit 不可用，已降级为纯本地存储")
+                    return container
+                } catch {
+                    fatalError("无法创建数据库容器: \(error)")
+                }
+            }
         }
     }()
 
