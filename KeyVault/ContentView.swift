@@ -29,7 +29,8 @@ struct AppRootView: View {
         }
         .animation(.easeInOut(duration: 0.3), value: securityService.isUnlocked)
         .animation(.easeInOut(duration: 0.3), value: securityService.isSetupComplete)
-        .preferredColorScheme(.none) // 跟随系统深色/浅色模式
+        .preferredColorScheme(.none)
+        .environment(\.locale, Locale(identifier: "zh_CN"))
     }
 }
 

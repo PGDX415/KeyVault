@@ -74,6 +74,7 @@ struct AccountDetailView: View {
             }
         }
         .animation(.easeInOut, value: copyFeedback)
+        .environment(\.locale, Locale(identifier: "zh_CN"))
     }
 
     // MARK: - 头部区域
