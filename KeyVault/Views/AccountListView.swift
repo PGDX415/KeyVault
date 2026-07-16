@@ -14,6 +14,7 @@ struct AccountListView: View {
     @State private var viewModel = AccountViewModel()
     @State private var securityService = SecurityService.shared
 
+    @State private var syncMonitor = SyncMonitor.shared
     @State private var showAddSheet = false
     @State private var showSettings = false
     @State private var selectedAccount: AccountDisplay?
@@ -26,6 +27,11 @@ struct AccountListView: View {
             listContent
                 .navigationTitle("密钥阁")
                 .toolbar {
+                    ToolbarItem(placement: .navigationBarLeading) {
+                        Image(systemName: syncMonitor.status.iconName)
+                            .foregroundColor(syncMonitor.status.color)
+                            .font(.caption)
+                    }
                     ToolbarItem(placement: .navigationBarTrailing) {
                         HStack(spacing: 12) {
                             Button {
@@ -78,6 +84,9 @@ struct AccountListView: View {
         }
         .onAppear {
             viewModel.configure(with: modelContext)
+            viewModel.loadAccounts()
+        }
+        .onChange(of: syncMonitor.remoteChangeCount) {
             viewModel.loadAccounts()
         }
     }
