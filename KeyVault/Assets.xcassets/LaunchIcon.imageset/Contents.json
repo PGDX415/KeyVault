@@ -1,0 +1,20 @@
+{
+  "images" : [
+    {
+      "filename" : "launch_shield.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "scale" : "2x"
+    },
+    {
+      "filename" : "launch_shield.png",
+      "idiom" : "universal",
+      "platform" : "ios",
+      "scale" : "3x"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
