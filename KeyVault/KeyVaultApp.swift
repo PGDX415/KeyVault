@@ -38,11 +38,26 @@ struct KeyVaultApp: App {
             }
         }
 
+        /// 排除本地数据库文件，避免 iCloud 系统备份冲突（CloudKit 已负责同步）
+        func excludeFromBackup() {
+            let supportDir = URL.applicationSupportDirectory
+            var resourceValues = URLResourceValues()
+            resourceValues.isExcludedFromBackup = true
+            var url = supportDir
+            // 逐级排除：Application Support 目录本身可能受保护，
+            // 最可靠方式是对 store 文件本身设置
+            for fileURL in [storeURL, walURL, shmURL] {
+                var mutableURL = fileURL
+                try? mutableURL.setResourceValues(resourceValues)
+            }
+        }
+
         do {
             let container = try ModelContainer(
                 for: schema,
                 configurations: [modelConfiguration]
             )
+            excludeFromBackup()
             SyncMonitor.shared.startObserving(container: container)
             return container
         } catch {
@@ -53,6 +68,7 @@ struct KeyVaultApp: App {
                     for: schema,
                     configurations: [modelConfiguration]
                 )
+                excludeFromBackup()
                 SyncMonitor.shared.startObserving(container: container)
                 return container
             } catch {
@@ -67,6 +83,7 @@ struct KeyVaultApp: App {
                         for: schema,
                         configurations: [localConfig]
                     )
+                    excludeFromBackup()
                     print("⚠️ CloudKit 不可用，已降级为纯本地存储")
                     return container
                 } catch {
